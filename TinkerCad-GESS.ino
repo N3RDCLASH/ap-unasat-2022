@@ -12,16 +12,14 @@
 #define BATTERY_RELAY 8
 #define BUZZER 9
 
-#define BATTERY_MIN_VOLTAGE 10.8;
-#define BATTERY_MAX_VOLTAGE 13.6;
-#define DIGITAL_CONSTANT 1023;
+#define BATTERY_MIN_VOLTAGE 10.8
+#define BATTERY_MAX_VOLTAGE 13.6
+#define SOlAR_MIN_CHARGE_VOLTAGE 12.9
+#define DIGITAL_CONSTANT 1023
 
-float temp = 0.0;
-int baselineTemp = 0;
-int celsius = 0;
-boolean toggle = false;
-// Weerstand constante
-int const RESISTANCE = 1023;
+boolean relay_toggle = true;
+boolean battery_connected = false;
+boolean solar_connected = false;
 
 // Functions
 float calculateVoltage(), calculateCurrent();
@@ -35,10 +33,8 @@ void setup()
     pinMode(ORANGE_LED, OUTPUT);
     pinMode(RED_LED, OUTPUT);
     pinMode(YELLOW_LED, OUTPUT);
-    pinMode(TEMP_SENSOR, INPUT);
     pinMode(SOLAR_INPUT, INPUT);
-    pinMode(8, OUTPUT);
-    pinMode(BUZZER, OUTPUT);
+    pinMode(BATTERY_RELAY, OUTPUT);
     pinMode(SOLAR_OUTPUT, OUTPUT);
     pinMode(BATTERY_OUTPUT, OUTPUT);
 
@@ -58,7 +54,7 @@ void setup()
 // todo: add comments
 void loop()
 {
-    if (toggle == 1)
+    if (relay_toggle == 1)
     {
         digitalWrite(BATTERY_RELAY, HIGH);
         digitalWrite(SOLAR_OUTPUT, LOW);
@@ -66,7 +62,7 @@ void loop()
         Serial.println("BATTERY ON");
     }
 
-    if (toggle == 0)
+    if (relay_toggle == 0)
     {
         Serial.println("SOLAR ON");
         digitalWrite(BATTERY_RELAY, LOW);
@@ -74,64 +70,82 @@ void loop()
         digitalWrite(BATTERY_OUTPUT, LOW);
     }
 
-    // Time
-    int time_elapsed = millis();
-    Serial.print("time: ");
-    Serial.println(time_elapsed);
-
     // Solar Panel
-    int solar_resistance = analogRead(SOLAR_INPUT);
-    float solar_voltage = calculateVoltage(solar_resistance);
+    int solar_reading = analogRead(SOLAR_INPUT);
+    float solar_voltage = calculateVoltage(solar_reading);
+
+    // Battery Values
+    int battery_reading = analogRead(BATTERY_INPUT);
+    float battery_voltage = calculateVoltage(battery_reading);
+    float battery_percentage = calculateBatteryPercentage(battery_voltage);
+
+    // Print values to console
+    printPowerLevelsToConsole(solar_voltage, battery_voltage, battery_percentage);
+
+    // Print values to lcd
+    printPowerLevelsToLcd(solar_voltage, battery_voltage, battery_percentage);
+
+    // Monitor power
+    monitorPowerLevels(solar_voltage, battery_voltage);
+
+    relay_toggle = !relay_toggle;
+}
+
+void monitorPowerLevels(float solar_voltage, float battery_voltage)
+{
+    // mode: Battery Charging
+    if (solar_voltage >= SOlAR_MIN_CHARGE_VOLTAGE && battery_voltage <= BATTERY_MIN_VOLTAGE)
+    {
+        digitalWrite(BATTERY_RELAY, HIGH);
+        digitalWrite(BATTERY_RELAY, HIGH);
+    }
+
+    // mode: Battery Charging
+    // if (solar_voltage >= SOlAR_MIN_CHARGE_VOLTAGE && battery_voltage <= BATTERY_MIN_VOLTAGE)
+    // {
+    //   digitalWrite(BATTERY_RELAY, HIGH);
+    //   digitalWrite(BATTERY_RELAY, HIGH);
+    // }
+}
+
+void printPowerLevelsToConsole(float solar_voltage, float battery_voltage, float battery_percentage)
+{
+    // Print values to console (Serial Monitor)
     Serial.print("Solar Voltage: ");
     Serial.println(solar_voltage);
-    Serial.println(RESISTANCE);
-
-    // Battery Monitor
-    int battery_resistance = analogRead(BATTERY_INPUT);
-    float battery_voltage = calculateVoltage(battery_resistance);
-    float battery_current = calculateCurrent(battery_voltage);
-
     Serial.print("Battery Voltage: ");
     Serial.println(battery_voltage);
-    Serial.print("Battery Current: ");
-    Serial.println(battery_current);
+    Serial.print("Battery Percentage: ");
+    Serial.println(battery_percentage);
+}
 
-    // Battery Charger
-    // float battery_capacity = battery_current * time_elapsed;
-    // Serial.print("Battery Capacity: ");
-    // Serial.println(battery_capacity);
-
-    // Voltmeter
-    int analog_value = analogRead(A0);
-    temp = (analog_value * 5.0) / 1023.0;
-
-    int Temp = 3;
-
-    Serial.print("v= ");
-    Serial.println(temp);
-
+void printPowerLevelsToLcd(float solar_voltage, float battery_voltage, float battery_percentage)
+{
     lcd.setCursor(0, 0);
     lcd.print("Solar:");
     lcd.print(solar_voltage);
 
-    // Print
     lcd.setCursor(0, 1);
     lcd.print("Battery:");
-    lcd.print(solar_voltage);
-
-    delay(1000);
-    toggle = !toggle;
+    lcd.print(battery_voltage);
 }
 
-float calculateVoltage(int resistance)
+// start calculation methods
+float calculateVoltage(int reading)
 {
-    return ((resistance * 5.0) / RESISTANCE) * 5.015;
+    return ((reading * 5.0) / DIGITAL_CONSTANT) * 5.5;
 }
 
 float calculateCurrent(float voltage)
 {
-    return voltage / RESISTANCE;
+    return voltage / DIGITAL_CONSTANT;
 }
+
+float calculateBatteryPercentage(float current_voltage)
+{
+    return ((current_voltage - BATTERY_MIN_VOLTAGE) / (BATTERY_MAX_VOLTAGE - BATTERY_MIN_VOLTAGE)) * 100;
+}
+// end calculation methods
 
 // vanaf hier begint het checken van connecties aan de GESS
 bool solarArrayConnected(float voltage)
@@ -140,17 +154,19 @@ bool solarArrayConnected(float voltage)
     {
         lcd.setCursor(0, 1);
         lcd.print("Solar Array Connected");
+        Serial.println("Solar Array Connected");
         return true;
     }
     lcd.setCursor(0, 1);
     lcd.print("Solar Array Not Connected");
+    Serial.println("Solar Array Not Connected");
     return false;
 }
 
 bool batteryConnected(float voltage)
 {
 
-    if (voltage != 0)
+    if (voltage >= 10.8)
     { // insert logic here - coming soon
         lcd.setCursor(0, 1);
         lcd.print("Battery Connected");
