@@ -112,7 +112,6 @@ float calculateBatteryPercentage(float current_voltage)
 {
   return ((current_voltage - BATTERY_MIN_VOLTAGE) / (BATTERY_MAX_VOLTAGE - BATTERY_MIN_VOLTAGE)) * 100;
 }
-
 // end calculation methods
 
 // vanaf hier begint het checken van connecties aan de GESS
