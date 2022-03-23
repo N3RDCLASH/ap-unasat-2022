@@ -36,6 +36,7 @@ void setup()
   pinMode(BLUE_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
   pinMode(YELLOW_LED, OUTPUT);
+  pinMode(BATTERY_INPUT, INPUT);
   pinMode(SOLAR_INPUT, INPUT);
   pinMode(BATTERY_RELAY, OUTPUT);
   pinMode(SOLAR_OUTPUT, OUTPUT);
