@@ -17,7 +17,7 @@
 #define SOLAR_MIN_CHARGE_VOLTAGE 12.9
 #define DIGITAL_CONSTANT 1023
 
-// global 
+// global
 boolean relay_toggle = true;
 boolean battery_connected = false;
 boolean solar_connected = false;
@@ -35,11 +35,12 @@ void setup()
     pinMode(BLUE_LED, OUTPUT);
     pinMode(RED_LED, OUTPUT);
     pinMode(YELLOW_LED, OUTPUT);
+    pinMode(BATTERY_INPUT, INPUT);
     pinMode(SOLAR_INPUT, INPUT);
     pinMode(BATTERY_RELAY, OUTPUT);
     pinMode(SOLAR_OUTPUT, OUTPUT);
     pinMode(BATTERY_OUTPUT, OUTPUT);
-
+   
     // turn red led on to indicate device is turned on
     digitalWrite(RED_LED, HIGH);
 
@@ -48,6 +49,7 @@ void setup()
     delay(500);
     digitalWrite(BUZZER, LOW);
 
+    digitalWrite(BATTERY_RELAY, HIGH);
 
     setup_completed = true;
 }
@@ -64,11 +66,14 @@ void loop()
     float battery_voltage = calculateVoltage(battery_reading);
     float battery_percentage = calculateBatteryPercentage(battery_voltage);
 
+    // check connections
     solar_connected = solarArrayConnected(solar_voltage);
     battery_connected = batteryConnected(battery_voltage);
 
+    // flash red led while one of the power inputs in not connected
     while (!solar_connected || !battery_connected)
     {
+        // flash red led
         digitalWrite(RED_LED, HIGH);
         delay(200);
         digitalWrite(RED_LED, LOW);
@@ -82,17 +87,17 @@ void loop()
     // Print values to lcd
     printPowerLevelsToLcd(solar_voltage, battery_voltage, battery_percentage);
 
-    // Monitor power
+    // Monitor power levels
     monitorPowerLevels(solar_voltage, battery_voltage);
 
-    Serial.println("---------");
+    Serial.println("--------------");
 }
 
 void monitorPowerLevels(float solar_voltage, float battery_voltage)
 {
-    // mode: Battery Charging
     if (solar_voltage >= SOLAR_MIN_CHARGE_VOLTAGE)
     {
+        // mode: battery charging
         turnOnSolarIndicatorLED();
         if (BATTERY_MIN_VOLTAGE < battery_voltage < BATTERY_MAX_VOLTAGE)
         {
@@ -105,9 +110,10 @@ void monitorPowerLevels(float solar_voltage, float battery_voltage)
             return;
         }
 
+        // mode: battery stops charging
         if (battery_voltage == BATTERY_MAX_VOLTAGE)
         {
-            // disconnect the solar voltage charger
+            // disconnect the solar voltage
             digitalWrite(BATTERY_RELAY, LOW);
             // set solar panel as output
             digitalWrite(SOLAR_OUTPUT, HIGH);
@@ -117,7 +123,7 @@ void monitorPowerLevels(float solar_voltage, float battery_voltage)
         }
     }
 
-    // mode: Battery Charging
+    // mode: solar panel voltage low
     if (solar_voltage < SOLAR_MIN_CHARGE_VOLTAGE)
     {
         turnOnBatteryIndicatorLED();
@@ -140,7 +146,7 @@ void monitorPowerLevels(float solar_voltage, float battery_voltage)
 
             // turn off solar output
             digitalWrite(BATTERY_OUTPUT, LOW);
-            
+
             // print message to inform user
             lcd.print("No output available.");
             Serial.println("No output available.");
@@ -160,7 +166,7 @@ void printPowerLevelsToConsole(float solar_voltage, float battery_voltage, float
     Serial.print("Battery Percentage: ");
     Serial.println(battery_percentage);
 }
-
+// Print values to LCD
 void printPowerLevelsToLcd(float solar_voltage, float battery_voltage, float battery_percentage)
 {
     lcd.setCursor(0, 0);
@@ -172,19 +178,20 @@ void printPowerLevelsToLcd(float solar_voltage, float battery_voltage, float bat
     lcd.print(battery_voltage);
 }
 
+// set blue led as solar mode indicator
 void turnOnSolarIndicatorLED()
 {
     digitalWrite(YELLOW_LED, LOW);
     digitalWrite(BLUE_LED, HIGH);
 }
-
+// set yellow led as battery mode indicator
 void turnOnBatteryIndicatorLED()
 {
     digitalWrite(YELLOW_LED, HIGH);
     digitalWrite(BLUE_LED, LOW);
 }
 
-// start calculation methods
+// --- start calculation methods ---
 float calculateVoltage(int reading)
 {
     return ((reading * 5.0) / DIGITAL_CONSTANT) * 5.5;
@@ -195,13 +202,14 @@ float calculateCurrent(float voltage)
     return voltage / DIGITAL_CONSTANT;
 }
 
+// calculate the battery percentage using the current battery voltage
 float calculateBatteryPercentage(float current_voltage)
 {
     return ((current_voltage - BATTERY_MIN_VOLTAGE) / (BATTERY_MAX_VOLTAGE - BATTERY_MIN_VOLTAGE)) * 100;
 }
-// end calculation methods
+// --- end calculation methods ---
 
-// vanaf hier begint het checken van connecties aan de GESS
+// --- start connection check methods ---
 bool solarArrayConnected(float voltage)
 {
     if (voltage != 0)
@@ -237,6 +245,7 @@ bool batteryConnected(float voltage)
     Serial.println("Battery Not Connected");
     return false;
 }
+// --- start connection check methods ---
 
 bool outputWires()
 { // L+- komt hier
