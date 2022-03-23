@@ -17,6 +17,7 @@
 #define SOLAR_MIN_CHARGE_VOLTAGE 12.9
 #define DIGITAL_CONSTANT 1023
 
+// global 
 boolean relay_toggle = true;
 boolean battery_connected = false;
 boolean solar_connected = false;
@@ -39,13 +40,14 @@ void setup()
     pinMode(SOLAR_OUTPUT, OUTPUT);
     pinMode(BATTERY_OUTPUT, OUTPUT);
 
+    // turn red led on to indicate device is turned on
     digitalWrite(RED_LED, HIGH);
 
+    // turn on beep
     digitalWrite(BUZZER, HIGH);
     delay(500);
     digitalWrite(BUZZER, LOW);
 
-    digitalWrite(BATTERY_RELAY, HIGH);
 
     setup_completed = true;
 }
@@ -105,7 +107,7 @@ void monitorPowerLevels(float solar_voltage, float battery_voltage)
 
         if (battery_voltage == BATTERY_MAX_VOLTAGE)
         {
-            // disconnect the solar voltage
+            // disconnect the solar voltage charger
             digitalWrite(BATTERY_RELAY, LOW);
             // set solar panel as output
             digitalWrite(SOLAR_OUTPUT, HIGH);
@@ -124,10 +126,25 @@ void monitorPowerLevels(float solar_voltage, float battery_voltage)
 
         if (battery_voltage == BATTERY_MAX_VOLTAGE)
         {
-            // set solar panel as output
-            digitalWrite(SOLAR_OUTPUT, HIGH);
-            // remove battery as output
+            // remove solar panel as output
+            digitalWrite(SOLAR_OUTPUT, LOW);
+            // set battery as output
+            digitalWrite(BATTERY_OUTPUT, HIGH);
+            return;
+        }
+
+        if (battery_voltage <= BATTERY_MIN_VOLTAGE)
+        {
+            // turn off solar output
+            digitalWrite(SOLAR_OUTPUT, LOW);
+
+            // turn off solar output
             digitalWrite(BATTERY_OUTPUT, LOW);
+            
+            // print message to inform user
+            lcd.print("No output available.");
+            Serial.println("No output available.");
+
             return;
         }
     }
