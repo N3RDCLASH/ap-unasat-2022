@@ -18,7 +18,7 @@
 #define DIGITAL_CONSTANT 1023
 
 // global
-boolean relay_toggle = true;
+boolean relay_toggle = false;
 boolean battery_connected = false;
 boolean solar_connected = false;
 boolean setup_completed = false;
