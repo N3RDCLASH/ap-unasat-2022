@@ -5,12 +5,12 @@
 #define RED_LED 13
 #define BLUE_LED 12
 #define YELLOW_LED 11
-#define SOLAR_INPUT A2
+#define SOLAR_INPUT A3
 #define SOLAR_OUTPUT 7
-#define BATTERY_INPUT A3
+#define BATTERY_INPUT A1
 #define BATTERY_OUTPUT 6
 #define SOLAR_OUTPUT 7
-#define BATTERY_RELAY 8
+#define CHARGER_RELAY 8
 #define BUZZER 9
 
 #define BATTERY_MIN_VOLTAGE 10.8
@@ -38,7 +38,7 @@ void setup()
   pinMode(YELLOW_LED, OUTPUT);
   pinMode(BATTERY_INPUT, INPUT);
   pinMode(SOLAR_INPUT, INPUT);
-  pinMode(BATTERY_RELAY, OUTPUT);
+  pinMode(CHARGER_RELAY, OUTPUT);
   pinMode(SOLAR_OUTPUT, OUTPUT);
   pinMode(BATTERY_OUTPUT, OUTPUT);
 
@@ -48,7 +48,7 @@ void setup()
   delay(500);
   digitalWrite(BUZZER, LOW);
 
-  digitalWrite(BATTERY_RELAY, HIGH);
+  digitalWrite(CHARGER_RELAY, HIGH);
 
   setup_completed = true;
 }
@@ -72,6 +72,9 @@ void loop()
   // flash red led while one of the power inputs in not connected
   while (!solar_connected || !battery_connected)
   {
+    // turn of charger relay if one of the connections is disconnected
+    digitalWrite(CHARGER_RELAY, LOW);
+
     // flash red led
     digitalWrite(RED_LED, HIGH);
     delay(200);
@@ -101,7 +104,7 @@ void monitorPowerLevels(float solar_voltage, float battery_voltage)
     if (BATTERY_MIN_VOLTAGE < battery_voltage < BATTERY_MAX_VOLTAGE)
     {
       // connect the solar voltage to charge the battery
-      digitalWrite(BATTERY_RELAY, HIGH);
+      digitalWrite(CHARGER_RELAY, HIGH);
       // set solar panel as output
       digitalWrite(SOLAR_OUTPUT, HIGH);
       // remove battery as output
@@ -113,7 +116,7 @@ void monitorPowerLevels(float solar_voltage, float battery_voltage)
     if (battery_voltage == BATTERY_MAX_VOLTAGE)
     {
       // disconnect the solar voltage
-      digitalWrite(BATTERY_RELAY, LOW);
+      digitalWrite(CHARGER_RELAY, LOW);
       // set solar panel as output
       digitalWrite(SOLAR_OUTPUT, HIGH);
       // remove battery as output
@@ -127,14 +130,29 @@ void monitorPowerLevels(float solar_voltage, float battery_voltage)
   {
     turnOnBatteryIndicatorLED();
     // disconnect the solar voltage to charge the battery
-    digitalWrite(BATTERY_RELAY, LOW);
+    digitalWrite(CHARGER_RELAY, LOW);
 
     if (battery_voltage == BATTERY_MAX_VOLTAGE)
     {
-      // set solar panel as output
-      digitalWrite(SOLAR_OUTPUT, HIGH);
-      // remove battery as output
+      // remove solar panel as output
+      digitalWrite(SOLAR_OUTPUT, LOW);
+      // set battery as output
+      digitalWrite(BATTERY_OUTPUT, HIGH);
+      return;
+    }
+
+    if (battery_voltage <= BATTERY_MIN_VOLTAGE)
+    {
+      // turn off solar output
+      digitalWrite(SOLAR_OUTPUT, LOW);
+
+      // turn off solar output
       digitalWrite(BATTERY_OUTPUT, LOW);
+
+      // print message to inform user
+      lcd.print("No output available.");
+      Serial.println("No output available.");
+
       return;
     }
   }

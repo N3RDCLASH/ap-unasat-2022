@@ -40,7 +40,7 @@ void setup()
     pinMode(BATTERY_RELAY, OUTPUT);
     pinMode(SOLAR_OUTPUT, OUTPUT);
     pinMode(BATTERY_OUTPUT, OUTPUT);
-   
+
     // turn red led on to indicate device is turned on
     digitalWrite(RED_LED, HIGH);
 
@@ -73,6 +73,9 @@ void loop()
     // flash red led while one of the power inputs in not connected
     while (!solar_connected || !battery_connected)
     {
+        // turn of charger relay if one of the connections is disconnected
+        digitalWrite(BATTERY_RELAY, LOW);
+
         // flash red led
         digitalWrite(RED_LED, HIGH);
         delay(200);
