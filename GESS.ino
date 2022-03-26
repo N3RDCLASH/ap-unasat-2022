@@ -5,9 +5,9 @@
 #define RED_LED 13
 #define BLUE_LED 12
 #define YELLOW_LED 11
-#define SOLAR_INPUT A3
+#define SOLAR_INPUT A2
 #define SOLAR_OUTPUT 7
-#define BATTERY_INPUT A1
+#define BATTERY_INPUT A0
 #define BATTERY_OUTPUT 6
 #define SOLAR_OUTPUT 7
 #define CHARGER_RELAY 8
