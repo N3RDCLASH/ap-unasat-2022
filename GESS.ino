@@ -1,5 +1,9 @@
 // include the library code:
-#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+#include <hd44780.h>
+#include <hd44780ioClass/hd44780_I2Cexp.h>
+
+hd44780_I2Cexp lcd;
 
 // arduino pin configuration
 #define RED_LED 13
@@ -26,13 +30,11 @@ boolean setup_completed = false;
 // Functions
 float calculateVoltage(), calculateCurrent();
 
-LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 void setup()
 {
   Serial.begin(9600);
-  lcd.init();
-  lcd.backlight();
+  lcd.begin(20,4);
   pinMode(BLUE_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
   pinMode(YELLOW_LED, OUTPUT);
@@ -72,6 +74,8 @@ void loop()
   // flash red led while one of the power inputs in not connected
   while (!solar_connected || !battery_connected)
   {
+    //
+
     // turn of charger relay if one of the connections is disconnected
     digitalWrite(CHARGER_RELAY, LOW);
 
