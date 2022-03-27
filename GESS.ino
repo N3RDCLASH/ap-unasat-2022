@@ -30,11 +30,10 @@ boolean setup_completed = false;
 // Functions
 float calculateVoltage(), calculateCurrent();
 
-
 void setup()
 {
   Serial.begin(9600);
-  lcd.begin(20,4);
+  lcd.begin(20, 4);
   pinMode(BLUE_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
   pinMode(YELLOW_LED, OUTPUT);
@@ -76,8 +75,10 @@ void loop()
   {
     //
 
-    // turn of charger relay if one of the connections is disconnected
+    // turn off relays if one of the connections is disconnected
     digitalWrite(CHARGER_RELAY, LOW);
+    digitalWrite(BATTERY_OUTPUT, LOW);
+    digitalWrite(SOLAR_OUTPUT, LOW);
 
     // flash red led
     digitalWrite(RED_LED, HIGH);
